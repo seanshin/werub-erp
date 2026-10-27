@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 17 * * *"   # 매일 02:00 KST — 전체 테스트 PG 레인(P2-7)
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: core — lint · test · migrate
+    runs-on: [self-hosted, werub-prod]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp_app
+          POSTGRES_PASSWORD: erp_dev
+          POSTGRES_DB: erp
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp_app -d erp"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: services/core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: WeasyPrint 런타임 (pango/cairo) + 한글 폰트
+        if: runner.environment == 'github-hosted'  # self-hosted는 서버에 사전설치
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 fonts-noto-cjk
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]" psycopg2-binary
+
+      - name: 의존성 CVE 스캔 (pip-audit·P1-6)
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.lock
+
+      - name: Lint (ruff)
+        run: ruff check src tests
+
+      - name: 모듈 경계 (import-linter)
+        run: cd src && lint-imports --config ../pyproject.toml
+
+      - name: 아키텍처 불변식 게이트 (INV-TEL-01·Phase0)
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/check_invariants.sh
+
+      - name: 단위 테스트 (sqlite)
+        run: pytest -q
+
+      - name: 마이그레이션 스모크 (PostgreSQL 16)
+        env:
+          DATABASE_URL: postgresql+asyncpg://erp_app:CHANGE_ME@localhost:5432/erp
+        run: alembic upgrade head
+
+      - name: 마이그 downgrade 왕복 (최근 1건·P1-5)
+        env:
+          DATABASE_URL: postgresql+asyncpg://erp_app:CHANGE_ME@localhost:5432/erp
+        run: |
+          alembic downgrade -1
+          alembic upgrade head
+
+      # P1-4 alembic check(모델↔마이그 드리프트)는 실드리프트 확증(#801 CI)으로 보류 —
+      # PG로 정확한 diff 진단 후 모델/마이그 정합 수정하고 blocking 게이트로 추가(별도 PR).
+
+      - name: 동시성 통합 테스트 (PostgreSQL — 행잠금 실검증)
+        env:
+          DATABASE_URL: postgresql+asyncpg://erp_app:CHANGE_ME@localhost:5432/erp
+          RUN_PG_INTEGRATION: "1"
+          TZ: Asia/Seoul   # prod 컨테이너와 동일 — naive KST→timestamptz 쓰기 정합의 전제
+        run: pytest -q tests/integration
+
+  pg-fulllane:
+    name: core — 전체 테스트 PG 레인 (nightly, non-blocking)
+    # PR은 게이트하지 않음 — sqlite가 가리던 PG 방언 회귀를 야간에 적발(P2-7).
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, werub-prod]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp_app
+          POSTGRES_PASSWORD: erp_dev
+          POSTGRES_DB: erp_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp_app -d erp_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: services/core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: WeasyPrint 런타임 (pango/cairo) + 한글 폰트
+        if: runner.environment == 'github-hosted'  # self-hosted는 서버에 사전설치
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 fonts-noto-cjk
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]"
+
+      - name: 전체 테스트 (PostgreSQL — 방언 회귀 적발)
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://erp_app:CHANGE_ME@localhost:5432/erp_test
+          TZ: Asia/Seoul   # prod 컨테이너와 동일 — 시각 단언이 러너 TZ에 좌우되지 않도록
+        run: pytest -q --ignore=tests/integration
+
+  web:
+    name: web — build
+    runs-on: [self-hosted, werub-prod]
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 빌드 (Next.js)
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build

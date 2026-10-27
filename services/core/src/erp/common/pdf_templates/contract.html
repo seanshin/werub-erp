@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 22mm; }
+  body { font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; color: #1a1a1a; }
+  h1 { font-size: 18pt; text-align: center; margin-bottom: 2mm; }
+  .sub { text-align: center; font-size: 10pt; color: #555; margin-bottom: 10mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5pt; margin-bottom: 8mm; }
+  th, td { border: 1px solid #999; padding: 6pt 9pt; vertical-align: top; }
+  th { background: #f0f2f5; text-align: left; width: 28%; }
+  td.num { text-align: right; }
+  h2 { font-size: 12pt; margin: 6mm 0 2mm; border-bottom: 1px solid #ccc; padding-bottom: 2pt; }
+  .clause { font-size: 10pt; line-height: 1.6; white-space: pre-wrap; }
+  .sign { margin-top: 16mm; font-size: 10.5pt; }
+  .sign td { border: none; padding: 3pt 0; }
+  .note { font-size: 8.5pt; color: #888; margin-top: 10mm; }
+  .status { display: inline-block; padding: 1pt 6pt; border: 1px solid #888; border-radius: 3pt;
+            font-size: 9pt; color: #444; }
+  .logo { display: block; margin: 0 auto 3mm; max-height: 16mm; max-width: 50mm; }
+</style>
+</head>
+<body>
+  {% if logo %}<img class="logo" src="{{ logo }}" alt="">{% endif %}
+  <h1>{{ title }}</h1>
+  <p class="sub">{{ type_label }} · 계약번호 {{ contract_no }}
+     · <span class="status">{{ status }}</span></p>
+
+  <table>
+    <tr><th>공급자(수탁자)</th><td>{{ vendor_name }}</td></tr>
+    <tr><th>분류 / 유형</th><td>{{ category }} / {{ type_label }}</td></tr>
+    <tr><th>계약기간</th><td>{{ start_on }} ~ {{ end_on }}{% if effective_on %} (발효 {{ effective_on }}){% endif %}</td></tr>
+    <tr><th>{{ amount_label }}</th><td class="num">{{ "{:,.0f}".format(amount) }} 원</td></tr>
+    {% if auto_renew %}<tr><th>자동갱신</th><td>예</td></tr>{% endif %}
+  </table>
+
+  <h2>계약 조건</h2>
+  <div class="clause">{{ terms }}</div>
+
+  {% if amendments %}
+  <h2>변경 이력</h2>
+  <table>
+    <tr><th style="width:18%">유형</th><th>변경 전</th><th>변경 후</th><th>적용일</th></tr>
+    {% for a in amendments %}
+    <tr><td>{{ a.change_type }}</td><td>{{ a.old_value }}</td><td>{{ a.new_value }}</td>
+        <td>{{ a.effective_on }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <table class="sign">
+    <tr><td>발주자(위탁자): {{ org_name }}</td><td style="text-align:right">(인)</td></tr>
+    <tr><td>공급자(수탁자): {{ vendor_name }}</td><td style="text-align:right">(인)</td></tr>
+  </table>
+
+  <p class="note">본 문서는 {{ generated_on }} 자동 생성된 계약서(안)입니다. 전자서명 정본은 별도 e-sign 절차로 확정됩니다.
+     {% if sign_status %}현재 서명상태: {{ sign_status }}.{% endif %} 출력 기록은 접속기록으로 보존됩니다.</p>
+</body>
+</html>

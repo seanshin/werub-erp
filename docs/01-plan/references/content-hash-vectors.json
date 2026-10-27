@@ -1,0 +1,24 @@
+{
+  "spec": "ERP-AI content_hash 정규화 v1.0 (BOM제거→NFC→LF→행끝공백제거→끝개행1→SHA-256)",
+  "generated_by": "hospital-erp services/core erp.regulatory.content_hash",
+  "vectors": [
+    {
+      "name": "v1-plain",
+      "description": "일반 본문 — 한글·개행·문서끝 개행 정규화",
+      "body_text": "보건복지부 고시 제2026-001호\n\n요양급여비용 수가 개정 안내.\n시행일: 2026년 7월 1일\n",
+      "expected_hash": "4a1eeab43a82747006c3fe990f8a92186b9c5dff1f5cfadf53be14a3b29b4faa"
+    },
+    {
+      "name": "v2-table",
+      "description": "표 서식(파이프·탭) + 행끝 공백 제거 검증 (행끝 공백 2칸 포함)",
+      "body_text": "| 코드 | 명칭 | 단가 |  \n| AA100 | 진찰료 | 15,000 |\t\n합계\t1건\n",
+      "expected_hash": "9d0c13a57b1e0b62537d92213af3fe9ccbf24d9cdb0ee04275339c3047e297b7"
+    },
+    {
+      "name": "v3-crlf-bom",
+      "description": "BOM + CRLF + NFD 한글 — 전체 정규화 경로 검증",
+      "body_text": "﻿고시 개정\r\n\r\n무한글 NFD 조합\r\n끝.\r\n\r\n\r\n",
+      "expected_hash": "7b72f374ee287882275f4470d975a8b021e90812e3d9199d64a6095dc55a8361"
+    }
+  ]
+}

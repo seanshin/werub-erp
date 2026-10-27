@@ -1,0 +1,9 @@
+# web 빌드 컨텍스트 슬림화 — npm ci가 의존성 재생성, .next 재빌드
+node_modules/
+.next/
+.turbo/
+.env
+.env.*
+npm-debug.log*
+.DS_Store
+*.md

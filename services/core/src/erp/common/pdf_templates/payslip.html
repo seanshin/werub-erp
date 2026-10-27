@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 20mm; }
+  body { font-family: "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; color: #1a1a1a; }
+  h1 { font-size: 16pt; text-align: center; margin-bottom: 2mm; }
+  .org { text-align: center; font-size: 10.5pt; color: #444; margin-bottom: 5mm; }
+  .hdr { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 5mm; }
+  .hdr td { border: 1px solid #bbb; padding: 4pt 8pt; }
+  .hdr .lbl { background: #f4f6f8; color: #555; width: 18%; }
+  .cols { width: 100%; border-collapse: collapse; }
+  .cols > tr > td { vertical-align: top; width: 50%; padding: 0; }
+  .cols > tr > td:first-child { padding-right: 4mm; }
+  table.items { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  table.items th, table.items td { border: 1px solid #999; padding: 4pt 7pt; }
+  table.items th { background: #f0f2f5; text-align: left; }
+  table.items td.num { text-align: right; }
+  .badge { font-size: 8pt; color: #0a7; margin-left: 3pt; }
+  .calc { font-size: 8pt; color: #888; display: block; margin-top: 1pt; }
+  .total td { font-weight: 700; background: #fafafa; }
+  .net { margin-top: 5mm; border: 2px solid #333; padding: 6pt 10pt; text-align: right;
+         font-size: 12pt; font-weight: 700; }
+  .note { font-size: 8.5pt; color: #888; margin-top: 6mm; }
+  .logo { display: block; margin: 0 auto 3mm; max-height: 16mm; max-width: 50mm; }
+</style>
+</head>
+<body>
+  {% if logo %}<img class="logo" src="{{ logo }}" alt="">{% endif %}
+  <h1>임 금 명 세 서</h1>
+  {% if org_name %}<p class="org">{{ org_name }}</p>{% endif %}
+
+  <table class="hdr">
+    <tr>
+      <td class="lbl">대상 월</td><td>{{ yyyymm }}</td>
+      <td class="lbl">지급일</td><td>{% if paid_on %}{{ paid_on }}{% else %}— (확정 {{ confirmed_at }}){% endif %}</td>
+    </tr>
+    <tr>
+      <td class="lbl">성명</td><td>{{ name }}</td>
+      <td class="lbl">사원번호</td><td>{{ employee_no }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">생년월일</td><td>{{ birth_date or "—" }}</td>
+      <td class="lbl">직급</td><td>{{ position or "—" }}</td>
+    </tr>
+  </table>
+
+  <table class="cols">
+    <tr>
+      <td>
+        <table class="items">
+          <tr><th>지급 항목</th><th style="text-align:right">금액(원)</th></tr>
+          {% for r in earnings %}
+          <tr>
+            <td>{{ r.item_name }}{% if not r.taxable %}<span class="badge">비과세</span>{% endif %}
+              {% if r.formula %}<span class="calc">{{ r.formula }}</span>{% endif %}</td>
+            <td class="num">{{ "{:,.0f}".format(r.amount) }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="total"><td>지급 합계</td><td class="num">{{ "{:,.0f}".format(total_earning) }}</td></tr>
+        </table>
+      </td>
+      <td>
+        <table class="items">
+          <tr><th>공제 항목</th><th style="text-align:right">금액(원)</th></tr>
+          {% for r in deductions %}
+          <tr>
+            <td>{{ r.item_name }}{% if r.formula %}<span class="calc">{{ r.formula }}</span>{% endif %}</td>
+            <td class="num">{{ "{:,.0f}".format(r.amount) }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="total"><td>공제 합계</td><td class="num">{{ "{:,.0f}".format(total_deduction) }}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <div class="net">실수령액 {{ "{:,.0f}".format(net) }} 원</div>
+
+  {% if incentive_detail %}
+  <table class="hdr" style="margin-top:6mm">
+    <tr><td class="lbl" colspan="4" style="text-align:center;background:#eef2fb;color:#334">진료 실적 배분 (성과급 근거)</td></tr>
+    <tr>
+      <td class="lbl">계약형</td><td>{{ incentive_detail.incentive_type or "—" }}</td>
+      <td class="lbl">배분율</td><td>{% if incentive_detail.rate_pct is not none %}{{ incentive_detail.rate_pct }}%{% else %}—{% endif %}</td>
+    </tr>
+    <tr>
+      <td class="lbl">진료수익</td><td>{% if incentive_detail.revenue is not none %}{{ "{:,.0f}".format(incentive_detail.revenue) }}{% else %}—{% endif %}</td>
+      <td class="lbl">순수입(net)</td><td>{{ "{:,.0f}".format(incentive_detail.net_revenue) }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">성과급 산식</td>
+      <td colspan="3">{% if incentive_detail.formula %}{{ incentive_detail.formula }} = {% endif %}{{ "{:,.0f}".format(incentive_detail.amount) }} 원</td>
+    </tr>
+  </table>
+  <p class="note" style="margin-top:2mm">진료 실적·배분 내역은 본인 명세에만 표기됩니다.</p>
+  {% endif %}
+
+  <p class="note">본 명세는 {{ confirmed_at }} 확정본입니다. 항목 하단 소자는 계산방법(근로시간수×통상임금×
+    가산율·기준액×요율)입니다. 조회·출력 기록은 접속기록으로 보존됩니다.</p>
+</body>
+</html>

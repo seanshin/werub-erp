@@ -1,0 +1,27 @@
+{
+  "spec": "공시 content_hash 정규화 7항 (erp-notice-rag 연동 스펙, 2026-06-07 합의)",
+  "note": "ERP 측은 동일 body_raw에 자체 구현을 적용해 expected_hash 일치를 확인할 것. 불일치 시 운영 진입 금지.",
+  "vectors": [
+    {
+      "id": "v1-plain",
+      "description": "일반 텍스트 — LF, BOM 없음, 끝 개행 없음",
+      "body_raw": "보건복지부 고시 제2026-141호\n\n초음파 검사의 급여기준을 다음과 같이 변경한다.\n\n제1조(목적) 이 고시는 요양급여 기준을 정함을 목적으로 한다.\n제2조(적용일) 이 고시는 2026년 7월 1일부터 시행한다.",
+      "expected_hash": "sha256:f21ae6d55281decb6930e6c912b16f515a682996d5813e7f6af0f353a2cd7ee6",
+      "normalized_preview": "보건복지부 고시 제2026-141호\n\n초음파 검사의 급여기준을 다음과 같이 변경한다.\n\n제1조(목적) 이 고시는 요양급여 기준을 정함을 목적으로"
+    },
+    {
+      "id": "v2-table",
+      "description": "표 서식 — 행 내부 연속 공백 보존(6항) + 행 끝 trailing 공백 제거(4항) 검증",
+      "body_raw": "수가 항목별 변경 내역   \n\n코드      항목명          점수   \nAA100     초음파(복부)    150.5\nAA200     초음파(흉부)    180.0   \n\n비고: 동시 산정 불가",
+      "expected_hash": "sha256:cfdbc3498fa9594346acf745b6380e6a848d5ae4d43b0cc4ee5b87aaa35fea4b",
+      "normalized_preview": "수가 항목별 변경 내역\n\n코드      항목명          점수\nAA100     초음파(복부)    150.5\nAA200     초음파(흉"
+    },
+    {
+      "id": "v3-crlf-bom",
+      "description": "CRLF + BOM + NFD 한글 + 문서 끝 다중 개행 — 1·2·3·5항 동시 검증",
+      "body_raw": "﻿마약류 관리에 관한 법률 시행규칙 일부개정령\r\n\r\n제1조(시행일) 이 규칙은 공포한 날부터 시행한다.\r\n\r\n\r\n",
+      "expected_hash": "sha256:bc5b277633eb3c46aa731347ddeb99e618a32ab12efccb1431c6035de1b359ea",
+      "normalized_preview": "마약류 관리에 관한 법률 시행규칙 일부개정령\n\n제1조(시행일) 이 규칙은 공포한 날부터 시행한다.\n"
+    }
+  ]
+}

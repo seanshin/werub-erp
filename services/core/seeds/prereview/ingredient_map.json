@@ -1,0 +1,5 @@
+[
+  {"insurance_code": "SMP-DRUG-A", "ingredient_code": "SMP-A", "ingredient_name": "[샘플] 성분A"},
+  {"insurance_code": "SMP-DRUG-B", "ingredient_code": "SMP-B", "ingredient_name": "[샘플] 성분B"},
+  {"insurance_code": "SMP-DRUG-C", "ingredient_code": "SMP-C", "ingredient_name": "[샘플] 소아금기 성분C"}
+]

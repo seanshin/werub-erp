@@ -1,0 +1,99 @@
+# 병원 ERP 운영 구성 — 격리망 on-prem, HIS 동거 서버 (design §2.3/§11.0).
+# 핵심 차이(dev 대비):
+#   · PostgreSQL 컨테이너 제외 — HIS 서버의 기존 PG 재사용(별도 DB `erp`, host.docker.internal)
+#   · 시크릿은 env 평문이 아닌 파일 주입(§6.4) — ./secrets/jwt_secret
+#   · 리소스 상한 적용(진료시간 외 배치 전제) — M0b 가용 리소스 확인 후 수치 확정
+#   · TLS·도메인 화이트리스트는 상위 프록시(HIS nginx 등)가 담당 — 여기선 내부 포트만 노출
+# 사전 준비: cp .env.example .env (값 채움) · mkdir -p secrets && echo "<32B+>" > secrets/jwt_secret
+# 기동: docker compose -f docker-compose.prod.yml up -d
+
+x-erp-env: &erp-env
+  env_file: [.env]
+  extra_hosts:
+    - "host.docker.internal:host-gateway"   # 컨테이너 → 호스트 PostgreSQL
+  restart: unless-stopped
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass \"$REDIS_PASSWORD\""]
+    env_file: [.env]
+    volumes: [erp_redis:/data]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 256M }
+
+  core:
+    <<: *erp-env
+    build: ../services/core
+    # Dockerfile CMD: alembic upgrade head(advisory lock) → uvicorn (동시 기동 방어)
+    ports: ["127.0.0.1:8000:8000"]   # 로컬 바인드만 — 외부 노출은 프록시 경유
+    depends_on:
+      redis: { condition: service_healthy }
+    secrets: [jwt_secret]
+    volumes:
+      - erp_attachments:/data/attachments    # 증빙·계약 첨부(ATTACHMENT_DIR) — 미설정이면 서명 개시 422
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health').status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  worker-integration:
+    <<: *erp-env
+    build:
+      context: ../services
+      dockerfile: worker-integration/Dockerfile
+    depends_on:
+      redis: { condition: service_healthy }
+    secrets: [jwt_secret]
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  worker-batch:
+    <<: *erp-env
+    build:
+      context: ../services
+      dockerfile: worker-batch/Dockerfile
+    depends_on:
+      redis: { condition: service_healthy }
+    secrets: [jwt_secret]
+    group_add: ["10001"]                      # 첨부 볼륨 공유(core 그룹) — 서명 완료본 회수 잡
+    volumes:
+      - notice_drop:/data/notice-drop        # HIS 청구모듈 EDI 수신함 (읽기/이동)
+      - erp_exports:/data/exports             # Excel/PDF 산출물
+      - erp_attachments:/data/attachments
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  web:
+    <<: *erp-env
+    build: ../apps/web
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      core: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+secrets:
+  jwt_secret:
+    file: ./secrets/jwt_secret               # 권한 600 — git 미추적(secrets/ ignore)
+
+volumes:
+  erp_redis:
+  notice_drop:
+  erp_exports:
+  erp_attachments:

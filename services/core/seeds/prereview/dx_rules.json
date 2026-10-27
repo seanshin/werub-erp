@@ -1,0 +1,5 @@
+[
+  {"code": "SMP-ONC-1", "require_dx_prefixes": "C,D0", "name": "[샘플] 항암 처치",
+   "reason": "[샘플] 악성종양(C·D0) 상병 필요 — HIRA 상병-수가 기준으로 교체 필요",
+   "severity": "WARN"}
+]

@@ -1,0 +1,6 @@
+[
+  {"parent_code": "SMP-PKG-1", "child_codes": "SMP-SUB-1,SMP-SUB-2", "rule_type": "BUNDLE",
+   "name": "[샘플] 패키지 묶음", "reason": "[샘플] 패키지 포함 세부 별도산정 불가 예시", "severity": "WARN"},
+  {"parent_code": "SMP-OP-1", "child_codes": "SMP-MAT-1", "rule_type": "MATERIAL",
+   "name": "[샘플] 수술 포함 재료", "reason": "[샘플] 수술수가 포함 재료 별도청구 예시", "severity": "WARN"}
+]

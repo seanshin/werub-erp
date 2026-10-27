@@ -1,0 +1,81 @@
+# 개발용 구성 — 운영(HIS 동거 서버)에서는 DB 서비스 제외, 기존 DB 사용 (design §2.3)
+# 운영 리소스 상한은 M0b 가용 리소스 확인 후 docker-compose.prod.yml에서 확정
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: erp_app
+      POSTGRES_PASSWORD: erp_dev
+      POSTGRES_DB: erp
+    ports: ["55432:5432"]  # 호스트 55432 — 로컬 PostgreSQL(5432) 충돌 회피
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_app -d erp"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports: ["6379:6379"]
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 256M }
+
+  core:
+    build: ../services/core
+    environment:
+      DATABASE_URL: postgresql+asyncpg://erp_app:CHANGE_ME@postgres:5432/erp
+      REDIS_URL: redis://redis:6379/0
+      ENV: dev
+      TZ: Asia/Seoul
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  worker-integration:
+    build:
+      context: ../services
+      dockerfile: worker-integration/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://erp_app:CHANGE_ME@postgres:5432/erp
+      REDIS_URL: redis://redis:6379/0
+      TZ: Asia/Seoul
+      # WEVE_AI_API_BASE / WEVE_AI_API_KEY — 화이트리스트 등록 후 설정 (미설정 시 대기 모드)
+    depends_on:
+      postgres: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  worker-batch:
+    build:
+      context: ../services
+      dockerfile: worker-batch/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://erp_app:CHANGE_ME@postgres:5432/erp
+      REDIS_URL: redis://redis:6379/0
+      TZ: Asia/Seoul
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  web:
+    build: ../apps/web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports: ["3000:3000"]
+    depends_on: [core]
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+volumes:
+  pgdata:

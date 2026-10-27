@@ -1,0 +1,2 @@
+- [Codebase shape](codebase-shape.md) — async SQLAlchemy + FastAPI ERP, deterministic pure-function engines, shared-session transaction model
+- [Known fragile patterns](fragile-patterns.md) — session.rollback() inside savepoints, priced=False not excluded, fee type lost in invoice path

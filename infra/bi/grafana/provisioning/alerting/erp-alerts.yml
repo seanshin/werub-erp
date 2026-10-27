@@ -1,0 +1,94 @@
+# ERP 경영 BI 알림 룰 (Unified Alerting 파일 프로비저닝) — bi-enhancements §B-9.
+# 마트는 야간 갱신이라 6h 평가면 충분. ⚠ 이메일 발송은 GF_SMTP_* 설정 선행(미설정 시
+# 룰 상태·Alerting UI 표시만 동작) — SMTP 결정 후 contact point 연결(런북 §5.5).
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: erp-bi-alerts
+    folder: ERP 경영 알림
+    interval: 6h
+    rules:
+      - uid: erp-audit-open
+        title: 미검토 감사·이상탐지 존재
+        condition: C
+        for: 0s
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: "최근월 감사·이상탐지 미검토 {{ $values.B }}건 — 검토 워크플로 처리 필요"
+        labels: { domain: audit }
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: erp_reporting
+            model:
+              refId: A
+              format: table
+              rawSql: "SELECT open_total::float8 FROM reporting.mart_audit_flags_monthly ORDER BY yyyymm DESC LIMIT 1"
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+      - uid: erp-cash-min-balance
+        title: 자금 예측 최저잔액 5억 미만
+        condition: C
+        for: 0s
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: "6개월 자금 예측 최저잔액 {{ $values.B }}원 — 자금계획 점검 필요(임계 5억)"
+        labels: { domain: finance }
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: erp_reporting
+            model:
+              refId: A
+              format: table
+              rawSql: "SELECT min(balance)::float8 FROM reporting.mart_cash_forecast WHERE yyyymm = (SELECT max(yyyymm) FROM reporting.mart_cash_forecast)"
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [500000000] }
+      - uid: erp-debt-ratio
+        title: 부채비율 200% 초과
+        condition: C
+        for: 0s
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: "최근월 부채비율 {{ $values.B }}% — 임계(200%) 초과, 재무구조 점검 필요"
+        labels: { domain: finance }
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: erp_reporting
+            model:
+              refId: A
+              format: table
+              rawSql: "SELECT debt_ratio_pct::float8 FROM reporting.mart_exec_kpi_monthly WHERE debt_ratio_pct IS NOT NULL ORDER BY yyyymm DESC LIMIT 1"
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [200] }

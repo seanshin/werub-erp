@@ -1,0 +1,11 @@
+[
+  {"dur_type": "CONTRA", "ingredient_code": "SMP-A", "ingredient_code_b": "SMP-B",
+   "reason": "[샘플] 병용금기 예시 — 식약처 DUR(병용금기 약물쌍)로 교체 필요",
+   "notice_no": "SAMPLE", "severity": "BLOCK", "source": "SAMPLE"},
+  {"dur_type": "AGE", "ingredient_code": "SMP-C", "max_age": 12,
+   "reason": "[샘플] 12세 이하 연령금기 예시 — 식약처 DUR(연령금기)로 교체 필요",
+   "notice_no": "SAMPLE", "severity": "BLOCK", "source": "SAMPLE"},
+  {"dur_type": "DUP",
+   "reason": "[샘플] 동일성분 중복투여 예시 — 성분 매핑 적재 시 전 코드 자동 점검",
+   "severity": "WARN", "source": "SAMPLE"}
+]

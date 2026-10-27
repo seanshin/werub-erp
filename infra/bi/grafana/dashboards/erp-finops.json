@@ -1,0 +1,122 @@
+{
+  "title": "ERP 재무·운영 종합",
+  "uid": "erp-finops",
+  "tags": ["erp", "재무", "운영", "reporting"],
+  "timezone": "Asia/Seoul",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": { "from": "now-2y", "to": "now" },
+  "refresh": "",
+  "templating": {
+    "list": [
+      {
+        "name": "dept", "label": "진료과", "type": "query",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "query": "SELECT DISTINCT department FROM reporting.mart_hr_turnover_monthly WHERE department IS NOT NULL ORDER BY 1",
+        "multi": true, "includeAll": true, "refresh": 2,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries", "title": "자금수지 추세 (월)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, inflow AS \"유입\", outflow AS \"유출\", net AS \"순현금\" FROM reporting.mart_cashflow_monthly ORDER BY 1" }]
+    },
+    {
+      "type": "timeseries", "title": "손익 추세 (수익·매출총이익·영업이익)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, total_revenue AS \"수익\", gross_profit AS \"매출총이익\", operating_income AS \"영업이익\" FROM reporting.mart_income_function_monthly ORDER BY 1" }]
+    },
+    {
+      "type": "timeseries", "title": "원가 구성 (매출원가·판관비)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, cogs AS \"매출원가\", sga AS \"판관비\" FROM reporting.mart_income_function_monthly ORDER BY 1" }]
+    },
+    {
+      "type": "timeseries", "title": "채권·채무 잔액 추세",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, max(CASE WHEN kind='AR' THEN total END) AS \"채권\", max(CASE WHEN kind='AP' THEN total END) AS \"채무\" FROM reporting.mart_aging_monthly GROUP BY yyyymm ORDER BY 1" }]
+    },
+    {
+      "type": "table", "title": "채권·채무 Aging (최근월)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "locale", "decimals": 0 }, "overrides": [] },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT kind AS \"구분\", bucket_current AS \"현재\", bucket_1_30 AS \"1-30\", bucket_31_60 AS \"31-60\", bucket_61_90 AS \"61-90\", bucket_90plus AS \"90+\", total AS \"합계\" FROM reporting.mart_aging_monthly WHERE yyyymm = (SELECT max(yyyymm) FROM reporting.mart_aging_monthly) ORDER BY kind" }]
+    },
+    {
+      "type": "timeseries", "title": "검진권 추세 (발급·사용·미사용잔액)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, issued_amount AS \"발급\", redeemed_amount AS \"사용\", unredeemed_krw AS \"미사용잔액\" FROM reporting.mart_voucher_monthly ORDER BY 1" }]
+    },
+    {
+      "type": "table", "title": "진료과별 이직률 (최근월)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 24 },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT department AS \"진료과\", active AS \"재직\", \"left\" AS \"퇴직\", rate AS \"이직률%\" FROM reporting.mart_hr_turnover_monthly WHERE yyyymm = (SELECT max(yyyymm) FROM reporting.mart_hr_turnover_monthly) AND department IN (${dept:sqlstring}) ORDER BY rate DESC" }]
+    },
+    {
+      "type": "table", "title": "재고 현황 (최근 스냅샷)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 24 },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT yyyymm AS \"월\", total_value AS \"재고자산\", shortage_count AS \"안전재고미달\", dead_stock_count AS \"장기재고\" FROM reporting.mart_inventory_monthly ORDER BY yyyymm DESC LIMIT 1" }]
+    },
+    {
+      "type": "barchart", "title": "자금수지 예측 (6개월·최신 스냅샷)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 33 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "options": { "xTickLabelRotation": -30 },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT label AS \"구간\", inflow AS \"수금예정\", outflow AS \"지급예정\", balance AS \"예상잔액\" FROM reporting.mart_cash_forecast WHERE yyyymm = (SELECT max(yyyymm) FROM reporting.mart_cash_forecast) ORDER BY bucket_idx" }]
+    },
+    {
+      "type": "timeseries", "title": "재무비율 추세 (연간)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 33 },
+      "fieldConfig": {
+        "defaults": { "unit": "percentunit", "decimals": 1,
+          "custom": { "drawStyle": "line", "showPoints": "always", "pointSize": 7 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "유동비율(배)" },
+            "properties": [{ "id": "unit", "value": "none" }, { "id": "decimals", "value": 2 }] }
+        ]
+      },
+      "targets": [{ "refId": "A", "format": "table",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "rawSql": "SELECT to_date(year::text,'YYYY') AS time, current_ratio AS \"유동비율(배)\", debt_ratio AS \"부채비율\", equity_ratio AS \"자기자본비율\", operating_margin AS \"의료이익률\", labor_cost_ratio AS \"인건비율\", material_cost_ratio AS \"재료비율\" FROM reporting.mart_ratios_annual ORDER BY 1" }]
+    }
+  ]
+}

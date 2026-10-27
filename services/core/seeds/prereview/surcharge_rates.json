@@ -1,0 +1,6 @@
+[
+  {"grade": "CLINIC", "rate": 0.15, "applies_to": "TARIFF"},
+  {"grade": "HOSPITAL", "rate": 0.20, "applies_to": "TARIFF"},
+  {"grade": "GENERAL", "rate": 0.25, "applies_to": "TARIFF"},
+  {"grade": "SUPERIOR", "rate": 0.30, "applies_to": "TARIFF"}
+]

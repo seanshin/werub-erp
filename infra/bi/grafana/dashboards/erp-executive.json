@@ -1,0 +1,144 @@
+{
+  "title": "ERP 경영진 BI",
+  "uid": "erp-exec",
+  "tags": ["erp", "경영", "reporting"],
+  "timezone": "Asia/Seoul",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "time": { "from": "now-2y", "to": "now" },
+  "refresh": "",
+  "templating": {
+    "list": [
+      {
+        "name": "dept", "label": "진료과", "type": "query",
+        "datasource": { "type": "postgres", "uid": "erp_reporting" },
+        "query": "SELECT DISTINCT department FROM reporting.mart_dept_pl_monthly WHERE department IS NOT NULL ORDER BY 1",
+        "multi": true, "includeAll": true, "refresh": 2,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "수익·순이익 추세 (월)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "postgres", "uid": "erp_reporting" },
+          "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, revenue AS \"수익\", net_income AS \"순이익\" FROM reporting.mart_exec_kpi_monthly ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "재무비율 (유동·부채·의료이익률)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "postgres", "uid": "erp_reporting" },
+          "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, current_ratio AS \"유동비율\", debt_ratio_pct AS \"부채비율%\", operating_margin_pct AS \"의료이익률%\" FROM reporting.mart_exec_kpi_monthly ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "인력·이직률 (월)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "postgres", "uid": "erp_reporting" },
+          "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, headcount AS \"재직인원\", turnover_pct AS \"이직률%\" FROM reporting.mart_exec_kpi_monthly ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "감사·이상탐지 미검토 추세 (월)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "postgres", "uid": "erp_reporting" },
+          "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, open_total AS \"미검토합\", abnormal_open AS \"비정상\", duplicate_open AS \"중복\" FROM reporting.mart_audit_flags_monthly ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "진료과별 손익 (최근월)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "locale", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "postgres", "uid": "erp_reporting" },
+          "rawSql": "SELECT department AS \"진료과\", revenue AS \"수익\", profit AS \"손익\", assets AS \"자산\", reportable AS \"보고부문\" FROM reporting.mart_dept_pl_monthly WHERE yyyymm = (SELECT max(yyyymm) FROM reporting.mart_dept_pl_monthly) AND department IN (${dept:sqlstring}) ORDER BY revenue DESC"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "감사 헤드라인 (최근월)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "locale", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "postgres", "uid": "erp_reporting" },
+          "rawSql": "SELECT yyyymm AS \"월\", benford_verdict AS \"Benford\", benford_sample_size AS \"표본\", duplicate_clusters AS \"중복군집\", abnormal_flagged AS \"비정상적발\", open_total AS \"미검토\" FROM reporting.mart_audit_flags_monthly ORDER BY yyyymm DESC LIMIT 6"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "월별 수익 YoY (당년 vs 전년)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 25 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "datasource": { "type": "postgres", "uid": "erp_reporting" },
+          "rawSql": "SELECT substr(yyyymm,6,2) || '월' AS \"월\", max(CASE WHEN substr(yyyymm,1,4) = to_char(now(),'YYYY') THEN revenue END) AS \"당년\", max(CASE WHEN substr(yyyymm,1,4) = to_char(now() - interval '1 year','YYYY') THEN revenue END) AS \"전년\" FROM reporting.mart_exec_kpi_monthly GROUP BY 1 ORDER BY 1"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "진료과별 손익 추세 ($dept)",
+      "datasource": { "type": "postgres", "uid": "erp_reporting" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 25 },
+      "fieldConfig": { "defaults": { "unit": "currencyKRW" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "datasource": { "type": "postgres", "uid": "erp_reporting" },
+          "rawSql": "SELECT to_date(yyyymm,'YYYY-MM') AS time, department AS metric, profit::float8 AS value FROM reporting.mart_dept_pl_monthly WHERE department IN (${dept:sqlstring}) ORDER BY 1"
+        }
+      ]
+    }
+  ]
+}

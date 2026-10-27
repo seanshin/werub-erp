@@ -1,0 +1,21 @@
+# Grafana 자동 프로비저닝 — ERP reporting 마트 읽기전용 datasource(erp_bi).
+# 비밀번호는 컨테이너 env ERP_BI_PASSWORD로 주입(파일 미커밋). 운영/PII 스키마는 권한 없음.
+apiVersion: 1
+datasources:
+  - name: ERP-reporting
+    uid: erp_reporting
+    type: postgres
+    access: proxy
+    url: postgres:5432           # docker_default 공유 PG 서비스명
+    database: erp
+    user: erp_bi
+    isDefault: true
+    editable: false
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+      maxOpenConns: 5            # 롤 CONNECTION LIMIT 10 내 — 공유 PG 부하 격리
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+    secureJsonData:
+      password: ${ERP_BI_PASSWORD}

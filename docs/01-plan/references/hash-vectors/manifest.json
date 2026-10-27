@@ -1,0 +1,26 @@
+{
+  "note": "weve: 각 file 원문 바이트를 content_hash(정규화7항)→expected_content_hash와 1:1 대조. raw_sha256은 수신 무결성.",
+  "vectors": [
+    {
+      "file": "vector1_plain.txt",
+      "raw_bytes": 106,
+      "raw_sha256": "f7e328bc90c5b516464c4393f2b05cecf2a6f8e6693e28d25d1904d7c2b5b232",
+      "normalized_repr": "'동일 진료일에 동일 행위를 2회 이상 산정할 수 없다.   초·재진 동시 산정 불가.\\n'",
+      "expected_content_hash": "0e15fef6a93e50e2fd22e86990cd6dadd0ac382e586af9299d79f5d6993e3943"
+    },
+    {
+      "file": "vector2_table.txt",
+      "raw_bytes": 42,
+      "raw_sha256": "469c7b805a85f4c9e04adc57648b564528eea30df028cb79c046dd56eff87f9c",
+      "normalized_repr": "'구분\\t점수\\n초진\\t188.21\\n재진\\t134.47\\n'",
+      "expected_content_hash": "469c7b805a85f4c9e04adc57648b564528eea30df028cb79c046dd56eff87f9c"
+    },
+    {
+      "file": "vector3_crlf_bom.txt",
+      "raw_bytes": 55,
+      "raw_sha256": "35c3391e29ad6a215e5694fa3a35e4b5332be52f9fa5f5a8e4ede2f0e0148bbe",
+      "normalized_repr": "'항목１  점수\\n복합림프물리치료\\t224.11\\n'",
+      "expected_content_hash": "27207cab743c993e3f1e5380d302b1bde0deb7b561098f976a2f779d85ed0936"
+    }
+  ]
+}

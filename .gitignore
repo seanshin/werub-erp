@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.bi
+!.env.bi.example
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.next/
+dist/
+*.log
+.DS_Store
+/exports/
+/staging-files/
+secrets/
+
+# 로컬 생성 아티팩트(추적 제외)
+docs/.pdca-snapshots/
+**/.claude/agent-memory/

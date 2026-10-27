@@ -1,0 +1,13 @@
+# worker 빌드 컨텍스트(services/) 슬림화 — core/ 코드만 필요
+**/.venv/
+**/__pycache__/
+*.py[cod]
+**/*.egg-info/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/tests/
+**/docs/
+.env
+.env.*
+**/.DS_Store
