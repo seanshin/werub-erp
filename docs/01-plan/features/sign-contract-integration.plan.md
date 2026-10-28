@@ -122,6 +122,6 @@ ERP                          HIS (문서·UX·오케스트레이션)        sign
 ---
 
 ## 관련 문서
-- sign 동의서 통합 가이드: `seanshin/sign:docs/05-handoff/his-integration-guide.md`
+- sign 동의서 통합 가이드: `seanshin/werub-sign:docs/05-handoff/his-integration-guide.md`
 - 계약 상세/기계가독: `sign-to-his-external-e2e-answers.md`·`openapi.json`
 - ERP↔HIS 생태계: [[erp-his-ecosystem]] · 운영 배포: [[erp-prod-deploy]]

@@ -1,6 +1,6 @@
 """e-sign 트랙 A 클라이언트 (ERP→sign 직접) — 외부 거래처 계약 서명.
 
-확정 핸드오프(seanshin/sign:docs/05-handoff/erp-track-a-handoff.md): enroll(WITNESS) →
+확정 핸드오프(seanshin/werub-sign:docs/05-handoff/erp-track-a-handoff.md): enroll(WITNESS) →
 requests(PORTAL·NONE) → portal-tokens. 동일 서버 내부 호출(http://127.0.0.1:4100/v1, x-api-key).
 경량 본인인증(requiredIdentityLevel=NONE). ERP는 계약 PDF SHA-256만 송신(원본 미반출).
 """

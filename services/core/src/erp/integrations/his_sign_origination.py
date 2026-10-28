@@ -1,6 +1,6 @@
 """e-sign #6 ERP 의료계약 발의(origination) caller — ERP→HIS (HIS 경유 트랙).
 
-확정 회신(seanshin/werubyHIS:docs/05-reference/his-reply-esign6-origination-final.md): 모델 (a)
+확정 회신(seanshin/werub-his:docs/05-reference/his-reply-esign6-origination-final.md): 모델 (a)
 ERP 주도. ERP가 계약 구조화 snapshot(JSON) 송신 → HIS 발급·PDF 렌더·documentHash·sign 제출 →
 완료 시 sign.completed(erpContractId=sourceId) ERP 인박스로 자동 발신(수신·완료본 회수·미러는 LIVE).
 
